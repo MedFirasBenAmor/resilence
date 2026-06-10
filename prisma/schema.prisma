@@ -1,0 +1,621 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  SUPERVISOR
+  COMPANY
+  ADMIN
+}
+
+enum StudentLevel {
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+}
+
+enum StudentSubLevel {
+  LEVEL_1_FOUNDATION
+  LEVEL_1_DELIVERY
+  LEVEL_1_TRANSITION
+  LEVEL_2_CONTRIBUTOR
+  LEVEL_2_EXECUTION
+  LEVEL_3_AUTONOMOUS
+  LEVEL_3_LEADERSHIP
+}
+
+enum AcademicValidationStatus {
+  PENDING
+  IN_REVIEW
+  VALIDATED
+  REJECTED
+}
+
+enum ProjectType {
+  FICTIONAL
+  REAL
+}
+
+enum ProjectStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  IN_PROGRESS
+  COMPLETED
+  ARCHIVED
+}
+
+enum ApplicationStatus {
+  PENDING
+  SHORTLISTED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+}
+
+enum DeliverableStatus {
+  DRAFT
+  SUBMITTED
+  IN_REVIEW
+  REVIEWED
+  APPROVED
+  REJECTED
+}
+
+enum FeedbackSource {
+  SUPERVISOR
+  COMPANY
+  PEER
+  SELF_ASSESSMENT
+  ADMIN
+}
+
+enum CertificateStatus {
+  DRAFT
+  ISSUED
+  REVOKED
+  EXPIRED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+}
+
+enum CompanyProjectRequestStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CONVERTED
+}
+
+enum AuditAction {
+  ROLE_APPROVED
+  INVITATION_REVOKED
+  INVITATION_EXPIRED
+  PROJECT_REQUEST_SUBMITTED
+  PROJECT_REQUEST_REVIEWED
+  PROJECT_REQUEST_APPROVED
+  PROJECT_REQUEST_REJECTED
+  PROJECT_REQUEST_CONVERTED
+  APPLICATION_ACCEPTED
+  APPLICATION_REJECTED
+  MEMBERSHIP_ASSIGNED
+  MEMBERSHIP_REACTIVATED
+  DELIVERABLE_SUBMITTED
+  DELIVERABLE_REVIEWED
+  FEEDBACK_CREATED
+  CERTIFICATE_CREATED
+  CERTIFICATE_VERIFIED
+}
+
+enum NotificationType {
+  APPLICATION_SUBMITTED
+  APPLICATION_STATUS_CHANGED
+  ACCOUNT_STATUS_CHANGED
+  INVITATION_ACCEPTED
+  DELIVERABLE_SUBMITTED
+  DELIVERABLE_REVIEWED
+  FEEDBACK_CREATED
+  CERTIFICATE_ISSUED
+  PROJECT_REQUEST_SUBMITTED
+  PROJECT_REQUEST_STATUS_CHANGED
+}
+
+model User {
+  id                   String                      @id @default(uuid()) @db.Uuid
+  email                String                      @unique
+  passwordHash         String?
+  role                 UserRole                    @default(STUDENT)
+  firstName            String
+  lastName             String
+  phone                String?
+  isActive             Boolean                     @default(true)
+  studentProfile       StudentProfile?
+  supervisorProfile    SupervisorProfile?
+  companyProfile       CompanyProfile?
+  createdProjects      Project[]                   @relation("ProjectCreatedBy")
+  reviewedApplications ProjectApplication[]        @relation("ApplicationReviewedBy")
+  reviewedDeliveries   Deliverable[]               @relation("DeliverableReviewedBy")
+  assignedMembership   ProjectMembership[]         @relation("MembershipAssignedBy")
+  createdTasks         ProjectTask[]               @relation("TaskCreatedBy")
+  projectComments      ProjectComment[]
+  projectFeedbacks     Feedback[]                  @relation("FeedbackAuthor")
+  givenTechnical       TechnicalScore[]            @relation("TechnicalScoreEvaluator")
+  givenMaturity        ProfessionalMaturityScore[] @relation("ProfessionalScoreEvaluator")
+  issuedCertificates   Certificate[]               @relation("CertificateIssuedBy")
+  validatedStudents    StudentProfile[]            @relation("StudentValidatedBy")
+  sentRoleInvitations  RoleInvitation[]            @relation("RoleInvitationCreatedBy")
+  acceptedInvitations  RoleInvitation[]            @relation("RoleInvitationAcceptedBy")
+  auditLogs            AuditLog[]                  @relation("AuditLogActor")
+  notifications        Notification[]              @relation("NotificationRecipient")
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+
+  @@index([role])
+  @@index([createdAt])
+}
+
+model StudentProfile {
+  id                       String                      @id @default(uuid()) @db.Uuid
+  userId                   String                      @unique @db.Uuid
+  level                    StudentLevel                @default(LEVEL_1)
+  subLevel                 StudentSubLevel             @default(LEVEL_1_FOUNDATION)
+  displayName              String?
+  headline                 String?
+  bio                      String?
+  skills                   String[]                    @default([])
+  skillsSummary            String?
+  availability             String?
+  professionalGoal         String?
+  academicInstitution      String?
+  programName              String?
+  graduationYear           Int?
+  academicValidationStatus AcademicValidationStatus    @default(PENDING)
+  academicValidatedById    String?                     @db.Uuid
+  academicValidatedAt      DateTime?
+  cvUrl                    String?
+  githubUrl                String?
+  linkedinUrl              String?
+  portfolioUrl             String?
+  isPortfolioPublic        Boolean                     @default(false)
+  portfolioSlug            String?                     @unique
+  user                     User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  academicValidatedBy      User?                       @relation("StudentValidatedBy", fields: [academicValidatedById], references: [id], onDelete: SetNull)
+  applications             ProjectApplication[]
+  memberships              ProjectMembership[]
+  receivedFeedbacks        Feedback[]
+  technicalScores          TechnicalScore[]
+  maturityScores           ProfessionalMaturityScore[]
+  certificates             Certificate[]
+  portfolioItems           PortfolioItem[]
+  createdAt                DateTime                    @default(now())
+  updatedAt                DateTime                    @updatedAt
+
+  @@index([level])
+  @@index([subLevel])
+  @@index([academicValidationStatus])
+  @@index([isPortfolioPublic])
+  @@index([createdAt])
+}
+
+model SupervisorProfile {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @unique @db.Uuid
+  title         String?
+  department    String?
+  expertiseArea String?
+  organization  String?
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects      Project[] @relation("ProjectSupervisor")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([createdAt])
+}
+
+model Company {
+  id          String           @id @default(uuid()) @db.Uuid
+  name        String           @unique
+  website     String?
+  description String?
+  industry    String?
+  isActive    Boolean          @default(true)
+  profiles    CompanyProfile[]
+  projects    Project[]
+  projectRequests CompanyProjectRequest[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([createdAt])
+}
+
+model CompanyProfile {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @unique @db.Uuid
+  companyId  String   @db.Uuid
+  jobTitle   String?
+  department String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([createdAt])
+}
+
+model Project {
+  id              String                      @id @default(uuid()) @db.Uuid
+  title           String
+  summary         String
+  description     String?
+  requiredSkills  String[]                    @default([])
+  type            ProjectType
+  status          ProjectStatus               @default(DRAFT)
+  targetLevel     StudentLevel
+  companyId       String?                     @db.Uuid
+  supervisorId    String?                     @db.Uuid
+  createdById     String                      @db.Uuid
+  startDate       DateTime?
+  endDate         DateTime?
+  capacity        Int?
+  company         Company?                    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  supervisor      SupervisorProfile?          @relation("ProjectSupervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
+  createdBy       User                        @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  applications    ProjectApplication[]
+  memberships     ProjectMembership[]
+  tasks           ProjectTask[]
+  deliverables    Deliverable[]
+  comments        ProjectComment[]
+  feedbacks       Feedback[]
+  technicalScores TechnicalScore[]
+  maturityScores  ProfessionalMaturityScore[]
+  certificates    Certificate[]
+  portfolioItems  PortfolioItem[]
+  convertedRequests CompanyProjectRequest[]   @relation("CompanyRequestConvertedProject")
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@index([targetLevel])
+  @@index([supervisorId])
+  @@index([companyId])
+  @@index([status, targetLevel])
+  @@index([createdAt])
+}
+
+model CompanyProjectRequest {
+  id                 String                      @id @default(uuid()) @db.Uuid
+  companyId          String                      @db.Uuid
+  title              String
+  shortSummary       String
+  domain             String
+  desiredLevel       StudentLevel
+  expectedTeamSize   Int
+  estimatedDuration  String
+  specBookUrl        String
+  status             CompanyProjectRequestStatus @default(SUBMITTED)
+  adminReviewNote    String?
+  reviewedAt         DateTime?
+  convertedProjectId String?                     @db.Uuid
+  company            Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  convertedProject   Project?                    @relation("CompanyRequestConvertedProject", fields: [convertedProjectId], references: [id], onDelete: SetNull)
+  createdAt          DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
+
+  @@index([companyId, status])
+  @@index([status, createdAt])
+  @@index([convertedProjectId])
+  @@index([createdAt])
+}
+
+model ProjectApplication {
+  id           String            @id @default(uuid()) @db.Uuid
+  projectId    String            @db.Uuid
+  studentId    String            @db.Uuid
+  status       ApplicationStatus @default(PENDING)
+  motivation   String?
+  reviewedById String?           @db.Uuid
+  reviewedAt   DateTime?
+  project      Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  student      StudentProfile    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  reviewedBy   User?             @relation("ApplicationReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@unique([projectId, studentId])
+  @@index([status])
+  @@index([projectId, status])
+  @@index([createdAt])
+}
+
+model ProjectMembership {
+  id           String         @id @default(uuid()) @db.Uuid
+  projectId    String         @db.Uuid
+  studentId    String         @db.Uuid
+  assignedById String?        @db.Uuid
+  roleLabel    String?
+  isActive     Boolean        @default(true)
+  startedAt    DateTime       @default(now())
+  endedAt      DateTime?
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assignedBy   User?          @relation("MembershipAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+  tasks        ProjectTask[]
+  deliverables Deliverable[]
+  feedbacks    Feedback[]
+  certificates Certificate[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([projectId, studentId])
+  @@index([projectId, isActive])
+  @@index([createdAt])
+}
+
+model ProjectTask {
+  id           String             @id @default(uuid()) @db.Uuid
+  projectId    String             @db.Uuid
+  membershipId String?            @db.Uuid
+  createdById  String?            @db.Uuid
+  title        String
+  description  String?
+  status       TaskStatus         @default(TODO)
+  dueDate      DateTime?
+  completedAt  DateTime?
+  project      Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  membership   ProjectMembership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  createdBy    User?              @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deliverables Deliverable[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([status])
+  @@index([projectId, status])
+  @@index([createdAt])
+}
+
+model Deliverable {
+  id            String             @id @default(uuid()) @db.Uuid
+  projectId     String             @db.Uuid
+  membershipId  String?            @db.Uuid
+  taskId        String?            @db.Uuid
+  reviewedById  String?            @db.Uuid
+  title         String
+  description   String?
+  submissionUrl String?
+  repositoryUrl String?
+  status        DeliverableStatus  @default(DRAFT)
+  submittedAt   DateTime?
+  reviewedAt    DateTime?
+  reviewComment String?
+  project       Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  membership    ProjectMembership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  task          ProjectTask?       @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  reviewedBy    User?              @relation("DeliverableReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  comments      ProjectComment[]
+  feedbacks     Feedback[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([status])
+  @@index([projectId])
+  @@index([membershipId])
+  @@index([createdAt])
+}
+
+model ProjectComment {
+  id            String       @id @default(uuid()) @db.Uuid
+  projectId     String       @db.Uuid
+  authorId      String       @db.Uuid
+  deliverableId String?      @db.Uuid
+  body          String
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author        User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  deliverable   Deliverable? @relation(fields: [deliverableId], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([projectId, createdAt])
+  @@index([deliverableId])
+  @@index([authorId])
+}
+
+model Feedback {
+  id              String                      @id @default(uuid()) @db.Uuid
+  studentId       String                      @db.Uuid
+  projectId       String?                     @db.Uuid
+  membershipId    String?                     @db.Uuid
+  deliverableId   String?                     @db.Uuid
+  authorId        String?                     @db.Uuid
+  source          FeedbackSource
+  title           String?
+  comment         String
+  rating          Int?
+  student         StudentProfile              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  project         Project?                    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  membership      ProjectMembership?          @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  deliverable     Deliverable?                @relation(fields: [deliverableId], references: [id], onDelete: SetNull)
+  author          User?                       @relation("FeedbackAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  technicalScores TechnicalScore[]
+  maturityScores  ProfessionalMaturityScore[]
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+
+  @@index([source])
+  @@index([projectId])
+  @@index([membershipId])
+  @@index([authorId])
+  @@index([studentId, createdAt])
+  @@index([createdAt])
+}
+
+model TechnicalScore {
+  id          String         @id @default(uuid()) @db.Uuid
+  studentId   String         @db.Uuid
+  projectId   String?        @db.Uuid
+  feedbackId  String?        @db.Uuid
+  evaluatorId String?        @db.Uuid
+  category    String
+  score       Int
+  maxScore    Int            @default(5)
+  notes       String?
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  project     Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  feedback    Feedback?      @relation(fields: [feedbackId], references: [id], onDelete: SetNull)
+  evaluator   User?          @relation("TechnicalScoreEvaluator", fields: [evaluatorId], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([feedbackId, category])
+  @@index([projectId])
+  @@index([studentId])
+  @@index([evaluatorId])
+  @@index([createdAt])
+}
+
+model ProfessionalMaturityScore {
+  id          String         @id @default(uuid()) @db.Uuid
+  studentId   String         @db.Uuid
+  projectId   String?        @db.Uuid
+  feedbackId  String?        @db.Uuid
+  evaluatorId String?        @db.Uuid
+  dimension   String
+  score       Int
+  maxScore    Int            @default(5)
+  notes       String?
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  project     Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  feedback    Feedback?      @relation(fields: [feedbackId], references: [id], onDelete: SetNull)
+  evaluator   User?          @relation("ProfessionalScoreEvaluator", fields: [evaluatorId], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([feedbackId, dimension])
+  @@index([projectId])
+  @@index([studentId])
+  @@index([evaluatorId])
+  @@index([createdAt])
+}
+
+model Certificate {
+  id                     String             @id @default(uuid()) @db.Uuid
+  studentId              String             @db.Uuid
+  projectId              String?            @db.Uuid
+  membershipId           String?            @db.Uuid
+  issuedById             String?            @db.Uuid
+  status                 CertificateStatus  @default(DRAFT)
+  title                  String
+  referenceCode          String             @unique
+  verificationCode       String             @unique
+  summary                String?
+  studentNameSnapshot    String
+  projectTitleSnapshot   String?
+  supervisorNameSnapshot String?
+  levelSnapshot          StudentLevel
+  skillsSnapshot         String[]           @default([])
+  issuedAt               DateTime?
+  expiresAt              DateTime?
+  student                StudentProfile     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  project                Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  membership             ProjectMembership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  issuedBy               User?              @relation("CertificateIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@index([studentId])
+  @@index([projectId])
+  @@index([status])
+  @@index([issuedAt])
+  @@index([createdAt])
+}
+
+model PortfolioItem {
+  id            String         @id @default(uuid()) @db.Uuid
+  studentId     String         @db.Uuid
+  projectId     String?        @db.Uuid
+  title         String
+  summary       String
+  description   String?
+  demoUrl       String?
+  repositoryUrl String?
+  isPublished   Boolean        @default(false)
+  sortOrder     Int            @default(0)
+  student       StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  project       Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([studentId])
+  @@index([createdAt])
+}
+
+model RoleInvitation {
+  id               String           @id @default(uuid()) @db.Uuid
+  email            String
+  role             UserRole
+  companyName      String?
+  token            String           @unique
+  status           InvitationStatus @default(PENDING)
+  invitedById      String?          @db.Uuid
+  acceptedByUserId String?          @db.Uuid
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  invitedBy        User?            @relation("RoleInvitationCreatedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  acceptedByUser   User?            @relation("RoleInvitationAcceptedBy", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([email, status])
+  @@index([role, status])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id         String      @id @default(uuid()) @db.Uuid
+  actorId    String?     @db.Uuid
+  action     AuditAction
+  targetType String
+  targetId   String?
+  details    Json?
+  createdAt  DateTime    @default(now())
+  actor      User?       @relation("AuditLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+  @@index([actorId, createdAt])
+}
+
+model Notification {
+  id          String           @id @default(uuid()) @db.Uuid
+  recipientId String           @db.Uuid
+  type        NotificationType
+  title       String
+  message     String
+  href        String?
+  readAt      DateTime?
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+  recipient   User             @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([recipientId, readAt])
+  @@index([type, createdAt])
+}

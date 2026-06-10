@@ -1,0 +1,11 @@
+
+> resilience-platform@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.5.15
+   - Local:        http://localhost:3001
+   - Network:      http://172.22.64.1:3001
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 3.2s
