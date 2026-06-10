@@ -1,6 +1,7 @@
 import { UserRole } from "@prisma/client";
 import { RoleInvitationForm } from "@/components/auth/role-invitation-form";
 import { RoleInvitationsTable } from "@/components/auth/role-invitations-table";
+import { SupervisorAccountForm } from "@/components/auth/supervisor-account-form";
 import { listRoleInvitations } from "@/lib/auth/invitations";
 import { requireRole } from "@/lib/rbac";
 
@@ -16,26 +17,27 @@ export default async function AdminAccessPage() {
             Access management
           </p>
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-950">
-            Inviter et approuver les roles sensibles
+            Creer les acces superviseur et gerer les invitations sensibles
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-700">
-            Les roles superviseur et entreprise ne sont plus disponibles en inscription
-            publique. Chaque accès passe par une invitation admin traçable, révocable et
-            expirable.
+            Les comptes superviseur peuvent etre crees directement par un admin. Les acces
+            entreprise et les autres flux sensibles restent traces via invitation.
           </p>
         </section>
 
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-          <RoleInvitationForm />
+          <div className="space-y-6">
+            <SupervisorAccountForm />
+            <RoleInvitationForm />
+          </div>
           <section className="space-y-4">
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-950">
                 Invitations en circulation
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Suivez ici les approbations déjà émises, leur statut et leur lien
-                d&apos;activation. Vous pouvez aussi révoquer ou faire expirer un accès non
-                utilise.
+                Conservez ce flux pour les entreprises et pour toute invitation sensible que
+                vous souhaitez garder expirables, revocables et partageables.
               </p>
             </div>
             <RoleInvitationsTable

@@ -14,23 +14,24 @@ export const auditLogFiltersSchema = z.object({
 export type AuditLogLifecycleStatus = "pending" | "accepted" | "revoked" | "expired";
 
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
-  ROLE_APPROVED: "Invitation approuvée",
-  INVITATION_REVOKED: "Invitation révoquée",
-  INVITATION_EXPIRED: "Invitation expirée",
+  ROLE_APPROVED: "Invitation approuvee",
+  SUPERVISOR_ACCOUNT_CREATED: "Compte superviseur cree",
+  INVITATION_REVOKED: "Invitation revoquee",
+  INVITATION_EXPIRED: "Invitation expiree",
   PROJECT_REQUEST_SUBMITTED: "Demande de projet soumise",
   PROJECT_REQUEST_REVIEWED: "Demande de projet en revue",
-  PROJECT_REQUEST_APPROVED: "Demande de projet approuvée",
+  PROJECT_REQUEST_APPROVED: "Demande de projet approuvee",
   PROJECT_REQUEST_REJECTED: "Demande de projet rejetée",
   PROJECT_REQUEST_CONVERTED: "Demande convertie en projet",
-  APPLICATION_ACCEPTED: "Candidature acceptée",
-  APPLICATION_REJECTED: "Candidature rejetée",
-  MEMBERSHIP_ASSIGNED: "Affectation créée",
-  MEMBERSHIP_REACTIVATED: "Affectation réactivée",
+  APPLICATION_ACCEPTED: "Candidature acceptee",
+  APPLICATION_REJECTED: "Candidature rejetee",
+  MEMBERSHIP_ASSIGNED: "Affectation creee",
+  MEMBERSHIP_REACTIVATED: "Affectation reactivee",
   DELIVERABLE_SUBMITTED: "Livrable soumis",
   DELIVERABLE_REVIEWED: "Livrable relu",
-  FEEDBACK_CREATED: "Feedback enregistré",
-  CERTIFICATE_CREATED: "Attestation créée",
-  CERTIFICATE_VERIFIED: "Attestation vérifiée",
+  FEEDBACK_CREATED: "Feedback enregistre",
+  CERTIFICATE_CREATED: "Attestation creee",
+  CERTIFICATE_VERIFIED: "Attestation verifiee",
 };
 
 const AUDIT_LOG_PAGE_SIZE = 20;
@@ -55,7 +56,7 @@ export function normalizeAuditLogFilters(rawFilters: Record<string, string | str
 
 export function formatAuditDetails(details: Prisma.JsonValue | null) {
   if (!details) {
-    return "Aucun détail supplémentaire.";
+    return "Aucun detail supplementaire.";
   }
 
   if (typeof details !== "object") {
@@ -66,7 +67,7 @@ export function formatAuditDetails(details: Prisma.JsonValue | null) {
     .slice(0, 4)
     .map(([key, value]) => `${key}: ${formatAuditScalar(value)}`);
 
-  return entries.length ? entries.join(" | ") : "Aucun détail supplémentaire.";
+  return entries.length ? entries.join(" | ") : "Aucun detail supplementaire.";
 }
 
 function formatAuditScalar(value: Prisma.JsonValue): string {
@@ -168,7 +169,7 @@ export async function listAuditLogs(rawFilters: Record<string, string | string[]
       actionLabel: AUDIT_ACTION_LABELS[item.action],
       actorName: item.actor
         ? `${item.actor.firstName} ${item.actor.lastName}`.trim()
-        : "Système",
+        : "Systeme",
       actorEmail: item.actor?.email ?? null,
       actorRole: item.actor?.role ?? null,
       detailsSummary: formatAuditDetails(item.details),

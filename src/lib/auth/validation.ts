@@ -38,5 +38,35 @@ export const registerSchema = z
     }
   });
 
+const optionalProfileFieldSchema = z
+  .string()
+  .trim()
+  .max(120, "Maximum 120 caracteres.")
+  .optional()
+  .transform((value) => value?.trim() || undefined);
+
+export const createSupervisorAccountSchema = z
+  .object({
+    firstName: nameSchema,
+    lastName: nameSchema,
+    email: z.email("Email invalide.").trim().toLowerCase(),
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, "Confirmation requise."),
+    title: optionalProfileFieldSchema,
+    department: optionalProfileFieldSchema,
+    expertiseArea: optionalProfileFieldSchema,
+    organization: optionalProfileFieldSchema,
+  })
+  .superRefine((input, ctx) => {
+    if (input.password !== input.confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["confirmPassword"],
+        message: "Les mots de passe ne correspondent pas.",
+      });
+    }
+  });
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type CreateSupervisorAccountInput = z.infer<typeof createSupervisorAccountSchema>;
